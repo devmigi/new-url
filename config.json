@@ -1,0 +1,7 @@
+{
+    "S3_PARTITION": "aws",
+    "PROFILE": "migi",
+    "REGION": "us-east-1",
+    "BUCKET": "migi-url-shortner",
+    "STAGE": "dev"
+  }

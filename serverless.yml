@@ -1,0 +1,74 @@
+service:
+  name: url-shortener
+
+plugins:
+  - serverless-webpack
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: ${file(config.json):STAGE}
+  profile: ${file(config.json):PROFILE}
+  region: ${file(config.json):REGION}
+  environment: 
+    URLS_TABLE: ${self:service}-${file(config.json):STAGE}-urls
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:PutObjectAcl
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+      Resource: [
+        "arn:${file(config.json):S3_PARTITION}:s3:::${file(config.json):BUCKET}/*",
+        "arn:aws:dynamodb:${file(config.json):REGION}:*:table/${self:provider.environment.URLS_TABLE}"
+      ]
+
+functions:
+  short:
+    handler: lambda/short.handler
+    environment:
+      BUCKET: ${file(config.json):BUCKET}
+    events:
+      - http:
+          method: post
+          path: save
+          cors: true
+
+resources:
+  Resources:
+    ServerlesslyRedirectS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${file(config.json):BUCKET}
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+    ServerlesslyRedirectS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: ${file(config.json):BUCKET}
+        PolicyDocument:
+          Statement:
+          - Action:
+            - s3:GetObject
+            Effect: Allow
+            Resource:
+            - arn:${file(config.json):S3_PARTITION}:s3:::${file(config.json):BUCKET}/*
+            Principal: "*"
+    UrlsDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: shortUrl
+            AttributeType: S
+        KeySchema:
+          - AttributeName: shortUrl
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.URLS_TABLE}
