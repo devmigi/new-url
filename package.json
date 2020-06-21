@@ -1,7 +1,7 @@
 {
   "name": "url-shortener",
   "version": "1.0.0",
-  "description": "Edureka URL Shortener",
+  "description": "Migi URL Shortener",
   "scripts": {
     "build": "tsc",
     "deploy": "npm run build && sls deploy"
